@@ -1,0 +1,25 @@
+# Python / Django
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3-journal
+
+# Environment variables
+.env
+
+# Vector database & Local storage
+data/
+chroma_db/
+.chroma/
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+.idea/

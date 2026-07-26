@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusRAG — Production AI Knowledge Engine</title>
+    <meta name="description" content="Production-ready Retrieval-Augmented Generation (RAG) chatbot application powered by Django, ChromaDB, TensorFlow local embeddings, and Gemini 2.5 Flash.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation & Knowledge Base Management -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>Nexus<span>RAG</span></h2>
+                    <span class="version-tag">v1.0 Pro</span>
+                </div>
+            </div>
+
+            <!-- Hardware & Accelerator Card -->
+            <div class="system-card">
+                <div class="card-header">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Hardware Accelerator</span>
+                </div>
+                <div class="card-body">
+                    <div class="status-indicator">
+                        <span class="status-dot online"></span>
+                        <span id="accelerator-name">{{ stats.embedding_device.device }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span>Vector Dim:</span>
+                        <strong id="vector-dim">{{ stats.embedding_device.vector_dim }}d</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knowledge Base Manager -->
+            <div class="kb-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-database"></i>
+                    <span>Vector Knowledge Base</span>
+                </div>
+
+                <div class="kb-stats-box">
+                    <div class="stat-item">
+                        <span class="stat-value" id="kb-chunk-count">{{ stats.total_chunks }}</span>
+                        <span class="stat-label">Indexed Chunks</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="kb-status">Active</span>
+                        <span class="stat-label">ChromaDB Store</span>
+                    </div>
+                </div>
+
+                <!-- Ingest Text Form -->
+                <div class="ingest-box">
+                    <label for="ingest-text-input">Ingest Custom Knowledge</label>
+                    <textarea id="ingest-text-input" placeholder="Paste article, documentation, or raw context here to chunk and embed into ChromaDB..."></textarea>
+                    
+                    <div class="ingest-actions">
+                        <input type="text" id="ingest-source-name" placeholder="Source Label (e.g. docs.txt)" value="manual_doc.txt">
+                        <button id="btn-ingest-text" class="btn btn-secondary">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Index Text
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Drag & Drop Upload -->
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" id="file-input" accept=".txt,.pdf,.md" hidden>
+                    <i class="fa-solid fa-file-arrow-up drop-icon"></i>
+                    <p>Drop <strong>PDF, TXT, or MD</strong> file here</p>
+                    <button class="btn btn-sm btn-outline" id="btn-browse-file">Browse File</button>
+                </div>
+
+                <!-- Reset Knowledge Base -->
+                <button id="btn-clear-db" class="btn btn-danger-outline btn-block mt-3">
+                    <i class="fa-solid fa-trash-can"></i> Clear Knowledge Base
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="api-status">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>LLM Engine:</span>
+                    <strong id="llm-model-badge">
+                        {% if gemini_configured %}Gemini 2.5 Flash{% else %}Local RAG Mode{% endif %}
+                    </strong>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-viewport">
+            <!-- Header Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="toggle-sidebar" class="btn-icon" title="Toggle Sidebar">
+                        <i class="fa-solid fa-bars-staggered"></i>
+                    </button>
+                    <div class="chat-title">
+                        <h3>RAG Knowledge Assistant</h3>
+                        <p>Ask questions grounded in your local vector database</p>
+                    </div>
+                </div>
+                
+                <div class="topbar-right">
+                    <div class="status-pill">
+                        <span class="status-dot active"></span>
+                        <span>Django Backend API</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Messages Scroll Container -->
+            <div class="messages-container" id="messages-container">
+                <!-- Welcome Banner -->
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <h2>Welcome to NexusRAG Chat</h2>
+                    <p>This production-ready RAG application ingests documents into a local <strong>ChromaDB</strong> vector database, computes embeddings using <strong>TensorFlow</strong>, and generates grounded responses via <strong>Google Gemini 2.5 Flash</strong>.</p>
+
+                    <div class="quick-prompts">
+                        <p class="quick-title"><i class="fa-solid fa-bolt-lightning"></i> Try Sample Questions or Ingest Seed Data:</p>
+                        <div class="prompt-chips">
+                            <button class="chip" data-prompt="What is Retrieval-Augmented Generation (RAG) and how does it reduce hallucination?">
+                                💡 What is RAG architecture?
+                            </button>
+                            <button class="chip" data-prompt="Summarize the core components of a production vector search pipeline.">
+                                ⚡ Vector Search Pipeline
+                            </button>
+                            <button class="chip" id="btn-seed-data">
+                                📚 Ingest Sample Knowledge Base
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Controls Bar -->
+            <div class="input-area">
+                <!-- Retained Context Sources Drawer Toggle -->
+                <div class="source-drawer-bar" id="source-drawer-bar" style="display: none;">
+                    <span id="sources-badge"><i class="fa-solid fa-book-bookmark"></i> 0 Context Chunks Retrieved</span>
+                    <button class="btn-text" id="btn-toggle-sources">View Retained Context <i class="fa-solid fa-chevron-up"></i></button>
+                </div>
+
+                <form id="chat-form" class="chat-form">
+                    <div class="input-wrapper">
+                        <textarea id="chat-input" placeholder="Ask anything about your ingested documents..." rows="1"></textarea>
+                        <button type="submit" id="btn-send" class="btn btn-primary" title="Send Message">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="input-footer">
+                    <span>Powered by Django • ChromaDB • TensorFlow GPU • Gemini API</span>
+                    <span id="latency-metric-badge" class="latency-badge"><i class="fa-solid fa-stopwatch"></i> Ready</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- App JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
